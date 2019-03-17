@@ -7,13 +7,19 @@ import pandas as pd
 import csv
 import sys
 import re
+import os
 
 # NL modules
 import nltk
 from nltk.stem.porter import PorterStemmer
 from nltk.stem.lancaster import LancasterStemmer
+import urllib2
+import html2text
 # word stemmer
-stemmer = LancasterStemmer()
+#stemmer = LancasterStemmer()
+
+from nltk.stem import SnowballStemmer
+stemmer = SnowballStemmer('english')
 #------------------------------------------------------------_#
 corpus_words = {}
 class_words = {}
@@ -60,17 +66,20 @@ def calculate_class_score(sentence, class_name, show_details=True):
     return score
 #------------------------------------------------------------_#
 def create_training_data(filename):
+  vendor_url='http://www.ti.com/product/'
   file = open(filename, 'rt')
   # T=FullText and decode to get rid of unicode
-  # AV: - (hyphen) is reaking havoc decided to eliminate it
   #T = file.read().decode("utf8").replace("-"," ") 
   T = file.read().decode("utf8")
-  
   file.close()
   Item=[x.strip() for x in T.split('\n')] 
   training_data=[]
   for i in Item:
     w=re.split(r'\W+', i)
+    #part_url= vendor_url + w[0]
+    #online_page_desc=page_desc(part_url);
+    #part_info=i + online_page_desc
+    #training_data.append({"class":w[0],"desc":part_info})
     training_data.append({"class":w[0],"desc":i})
   print ("%s sentences of training data" % len(training_data))
   classes = list(set([a['class'] for a in training_data]))
@@ -92,16 +101,49 @@ def create_training_data(filename):
             # add the word to our words in class list
             class_words[data['class']].extend([stemmed_word])
 #------------------------------------------------------------_#
-def readDataSet(filename):
-    data = pd.read_csv(filename) 
-    print "Data Shape=", data.shape
-    print "Data=\n", data 
-#------------------------------------------------------------_#
+def page_desc(url):
+  import os
+  from bs4 import BeautifulSoup
+  cmd = "curl " + url
+  f=os.popen(cmd)
+  rawhtml= "";
+  for i in f.readlines():
+    rawhtml = rawhtml + i
+  soup = BeautifulSoup(rawhtml)
+  for script in soup(["script", "style"]):
+    script.extract()    # rip it out
+  text = soup.get_text()
+  lines = (line.strip() for line in text.splitlines())
+  chunks = (phrase.strip() for line in lines for phrase in line.split(" "))
+  text = ' '.join(chunk for chunk in chunks if chunk)
+  return text
 
+#------------------------------------------------------------_#
+def buildDataSet(filename, enh_filename):  
+  data = pd.read_csv(filename) 
+  print "Data Shape=", data.shape
+  parts=data['Part Number']
+  online_desc=[]
+  vendor_url='http://www.ti.com/product/'
+  for p in parts:
+     part_url= vendor_url + p
+     part_desc=page_desc(part_url)
+     online_desc.append(part_desc)
+  data['Online'] =online_desc
+  data.to_csv(enh_filename, sep=',', encoding='utf-8')
+
+#------------------------------------------------------------_#
 # Showing some examples of matching
 def main():
   #filename = '../data/small-desc.csv'
-  filename= '../data/TI-Opamps-Desc.csv'
+  file= '../data/TI-Opamps-Desc.csv'
+  enh_file = os.path.splitext(file)[0] + '.enhanced.csv'
+  if os.path.isfile(enh_file):
+    filename = file
+  else: 
+     buildDataSet(file,enh_file)
+     filename = enh_file
+
   print "Creating training data model from file ", filename
   create_training_data(filename)
   #print ("Corpus words and counts: %s \n" % corpus_words)
@@ -109,7 +151,7 @@ def main():
   
   # Somthing that matches
   sentence = "low-noise precision"
-  for sentence in [ "low-noise" , "low-noise precision" ,  "amit" ]:
+  for sentence in [ ", low-quiescent current amplifiers offer high-input impedance" , "low-noise" , "low-noise precision" ,  "amit" ]:
     print "\nSentence = ", sentence
     print  "Top Matchs =" 
     print classify(sentence,1)
