@@ -24,7 +24,7 @@ stemmer = SnowballStemmer('english')
 corpus_words = {}
 class_words = {}
 #------------------------------------------------------------_#
-def classify(sentence, match_type=0):
+def classify(sentence,  match_type=0):
     # 1 = Print the best match
 
     high_class = None
@@ -34,7 +34,6 @@ def classify(sentence, match_type=0):
     
     for c in class_words.keys():
         # calculate score of sentence for each class
-        #score = calculate_class_score_commonality(sentence, c, show_details=False)
         score = calculate_class_score(sentence, c, show_details=False)
         # keep track of highest score
         if score > 0:
@@ -46,12 +45,8 @@ def classify(sentence, match_type=0):
       return [(high_class, high_score)]
     if match_type == 1:
       return [(high_class, high_score)]
-      # Choosing not to return the sorted list - sorting may be expensive
-      return sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[0]
     else:
       return sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
-
-    
 #------------------------------------------------------------_#
 def calculate_class_score(sentence, class_name, show_details=True):
     score = 0
@@ -100,6 +95,7 @@ def create_training_data(filename):
 
             # add the word to our words in class list
             class_words[data['class']].extend([stemmed_word])
+  return len(Item)
 #------------------------------------------------------------_#
 def page_desc(url):
   import os
@@ -117,7 +113,6 @@ def page_desc(url):
   chunks = (phrase.strip() for line in lines for phrase in line.split(" "))
   text = ' '.join(chunk for chunk in chunks if chunk)
   return text
-
 #------------------------------------------------------------_#
 def buildDataSet(filename, enh_filename):  
   data = pd.read_csv(filename) 
@@ -131,13 +126,30 @@ def buildDataSet(filename, enh_filename):
      online_desc.append(part_desc)
   data['Online'] =online_desc
   data.to_csv(enh_filename, sep=',', encoding='utf-8')
+  return enh_filename
+#------------------------------------------------------------_#
+def readSalesData(filename):  
+  data = pd.read_csv(filename) 
+  data = data.fillna(1.0)
+  return data
+#------------------------------------------------------------_#
+def scoreBasedOnSalesData(sdata, list):
+  
 
 #------------------------------------------------------------_#
 # Showing some examples of matching
 def main():
-  #filename = '../data/small-desc.csv'
-  file= '../data/TI-Opamps-Desc.csv'
+  file= '../data/TI-Opamps.Desc.csv'
   enh_file = os.path.splitext(file)[0] + '.enhanced.csv'
+  sales_file = os.path.splitext(file)[0] + '.sales.csv'
+  
+  print "Descriptions file =" + file
+  print "Enhanced Descriptions =" + enh_file
+  print "Sales Data =" + sales_file
+ 
+  sales_data=readSalesData(sales_file)
+  
+  sys.exit
   if os.path.isfile(enh_file):
     filename = file
   else: 
@@ -145,18 +157,17 @@ def main():
      filename = enh_file
 
   print "Creating training data model from file ", filename
-  create_training_data(filename)
+  total_parts=create_training_data(filename)
   #print ("Corpus words and counts: %s \n" % corpus_words)
   #print ("Class words: %s" % class_words)
   
   # Somthing that matches
   sentence = "low-noise precision"
-  for sentence in [ ", low-quiescent current amplifiers offer high-input impedance" , "low-noise" , "low-noise precision" ,  "amit" ]:
+  for sentence in [ "low-quiescent current amplifiers offer high-input impedance" , "low-noise" , "low-noise precision" ,  "amit" ]:
     print "\nSentence = ", sentence
-    print  "Top Matchs =" 
-    print classify(sentence,1)
-    print  "All Match =" 
-    print classify(sentence)
+    matches=classify(sentence)
+    print "Total Matches=" + str(len(matches)) + " out of " + str(total_parts) + " Matches"
+    
   
 #------------------------------------------------------------_#
 
