@@ -29,6 +29,19 @@ def nlreco():
    output = p1.communicate()[0].replace('\n', '<br />')
    return output
     
+@app.route('/creco', methods=['GET','POST'])
+def creco():
+   cmd="/Users/amit/ML/ClassProject/2019-ml-ucsc/src/creco.py "
+   p1 = subprocess.Popen([cmd], stdout=subprocess.PIPE)
+   output = p1.communicate()[0].replace('\n', '<br />')
+   return output
+
+@app.route('/agreco', methods=['GET','POST'])
+def agreco():
+   cmd="/Users/amit/ML/ClassProject/2019-ml-ucsc/src/nl-reco.py"
+   p1 = subprocess.Popen([cmd], stdout=subprocess.PIPE)
+   output = p1.communicate()[0].replace('\n', '<br />')
+   return output
 
 # start the server with the 'run()' method
 if __name__ == '__main__':
