@@ -24,29 +24,19 @@ stemmer = SnowballStemmer('english')
 corpus_words = {}
 class_words = {}
 #------------------------------------------------------------_#
-def classify(sentence,  match_type=0):
-    # 1 = Print the best match
+def classify(sentence):
 
     high_class = None
     high_score = 0
     # loop through our classes
     scores={}
-    
     for c in class_words.keys():
         # calculate score of sentence for each class
         score = calculate_class_score(sentence, c, show_details=False)
         # keep track of highest score
         if score > 0:
           scores[c]=score
-        if score > high_score:
-          high_class = c
-          high_score = score
-    if high_score < 1:
-      return [(high_class, high_score)]
-    if match_type == 1:
-      return [(high_class, high_score)]
-    else:
-      return sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
+    return sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
 #------------------------------------------------------------_#
 def calculate_class_score(sentence, class_name, show_details=True):
     score = 0
@@ -134,6 +124,7 @@ def readSalesData(filename):
   return data
 #------------------------------------------------------------_#
 def scoreBasedOnSalesData(sdata, list):
+  return 0;
   
 
 #------------------------------------------------------------_#
@@ -163,7 +154,7 @@ def main():
   
   # Somthing that matches
   sentence = "low-noise precision"
-  for sentence in [ "low-quiescent current amplifiers offer high-input impedance" , "low-noise" , "low-noise precision" ,  "amit" ]:
+  for sentence in [ "low-quiescent current amplifiers offer high-input impedance" , "low-noise" , "low-noise precision" ,  "amit", "unity gain-bandwidth" ]:
     print "\nSentence = ", sentence
     matches=classify(sentence)
     print "Total Matches=" + str(len(matches)) + " out of " + str(total_parts) + " Matches"
