@@ -150,16 +150,36 @@ def main():
   print "Creating training data model from file ", filename
   total_parts=create_training_data(filename)
   #print ("Corpus words and counts: %s \n" % corpus_words)
-  #print ("Class words: %s" % class_words)
+  #print ("Class words: %s" % class_words
   
   # Somthing that matches
-  sentence = "low-noise precision"
-  for sentence in [ "low-quiescent current amplifiers offer high-input impedance" , "low-noise" , "low-noise precision" ,  "amit", "unity gain-bandwidth" ]:
+  Sentences=[ "low-quiescent current amplifiers offer high-input impedance" ,"amit", "unity gain-bandwidth"]
+  for sentence in Sentences:
     print "\nSentence = ", sentence
     matches=classify(sentence)
     print "Total Matches=" + str(len(matches)) + " out of " + str(total_parts) + " Matches"
-    
+    matched_parts=[]
+    vendor_url='http://www.ti.com/product'
+    for m in matches:
+      matched_parts.append(m[0]);
+      part_url=vendor_url+"/"+m[0]
+      #print " Score = ", m[1], " ", part_url
   
+  Sentences=[ "current amplifier", "amplify current" , "amplify voltage "];
+  results = dict(); 
+  for sentence in Sentences:
+    print "\nSentence = ", sentence
+    matches=classify(sentence)
+    print "Total Matches=" + str(len(matches)) + " out of " + str(total_parts) + " Matches"
+    matched_parts=[]
+    for m in matches:
+      matched_parts.append(m[0]);
+    results[sentence] = matched_parts
+
+  print "Does my recommendation change based on search words??" 
+  print Sentences[0] , " vs ", Sentences[1] , " --> ", str(len(set(results[Sentences[0]]) - set(results[Sentences[1]])))
+  print Sentences[0] , " vs ", Sentences[2] , " --> ", str(len(set(results[Sentences[0]]) - set(results[Sentences[2]])))
+  print Sentences[1] , " vs ", Sentences[2] , " --> ", str(len(set(results[Sentences[0]]) - set(results[Sentences[2]])))
 #------------------------------------------------------------_#
 
 
