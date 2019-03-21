@@ -13,6 +13,8 @@ import os
 import nltk
 from nltk.stem.porter import PorterStemmer
 from nltk.stem.lancaster import LancasterStemmer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 import urllib2
 import html2text
 # word stemmer
@@ -23,9 +25,21 @@ stemmer = SnowballStemmer('english')
 #------------------------------------------------------------_#
 corpus_words = {}
 class_words = {}
+stop_words = set(stopwords.words('english'))
+#------------------------------------------------------------_#
+def exact_search_match(filename, s1, s2):
+  file = open(filename, 'rt')
+  T = file.read().decode("utf8")
+  file.close()
+  Item=[x.strip() for x in T.split('\n')] 
+  matches = []
+  for i in Item:
+    w=re.split(r'\W+', i)
+    if s1 in w and s2 in w:
+      matches.append(w[1])
+  return matches
 #------------------------------------------------------------_#
 def classify(sentence):
-
     high_class = None
     high_score = 0
     # loop through our classes
@@ -36,35 +50,26 @@ def classify(sentence):
         # keep track of highest score
         if score > 0:
           scores[c]=score
-    return sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
+    return sorted(scores.keys())
+    #return sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
 #------------------------------------------------------------_#
 def calculate_class_score(sentence, class_name, show_details=True):
     score = 0
-    # tokenize each word in our new sentence
-    for word in nltk.word_tokenize(sentence):
-        # check to see if the stem of the word is in any of our classes
-        if stemmer.stem(word.lower()) in class_words[class_name]:
-            # treat each word with same weight
+    for word_tokens in nltk.word_tokenize(sentence):
+        word  = ' '.join([w for w in word_tokens if not w in stop_words])
+        if stemmer.stem(word_tokens.lower()) in class_words[class_name]:
             score += 1
-            if show_details:
-                print ("   match: %s" % stemmer.stem(word.lower() ))
     return score
 #------------------------------------------------------------_#
 def create_training_data(filename):
-  vendor_url='http://www.ti.com/product/'
   file = open(filename, 'rt')
-  # T=FullText and decode to get rid of unicode
-  #T = file.read().decode("utf8").replace("-"," ") 
   T = file.read().decode("utf8")
   file.close()
   Item=[x.strip() for x in T.split('\n')] 
   training_data=[]
+  # Building traing_data_set
   for i in Item:
     w=re.split(r'\W+', i)
-    #part_url= vendor_url + w[0]
-    #online_page_desc=page_desc(part_url);
-    #part_info=i + online_page_desc
-    #training_data.append({"class":w[0],"desc":part_info})
     training_data.append({"class":w[0],"desc":i})
   print ("%s sentences of training data" % len(training_data))
   classes = list(set([a['class'] for a in training_data]))
@@ -72,18 +77,13 @@ def create_training_data(filename):
     class_words[c] = []   
   # loop through each sentence in our training data
   for data in training_data:
-    # tokenize each sentence into words
     for word in nltk.word_tokenize(data['desc']):
-        if word not in ["?", "'s", ]:
-            # stem and lowercase each word
+        if word not in ["?", "'s", ">", '\d']:
             stemmed_word = stemmer.stem(word.lower())
-            # have we not seen this word already?
             if stemmed_word not in corpus_words:
                 corpus_words[stemmed_word] = 1
             else:
                 corpus_words[stemmed_word] += 1
-
-            # add the word to our words in class list
             class_words[data['class']].extend([stemmed_word])
   return len(Item)
 #------------------------------------------------------------_#
@@ -137,49 +137,45 @@ def main():
   print "Descriptions file =" + file
   print "Enhanced Descriptions =" + enh_file
   print "Sales Data =" + sales_file
- 
-  sales_data=readSalesData(sales_file)
-  
-  sys.exit
   if os.path.isfile(enh_file):
     filename = file
   else: 
      buildDataSet(file,enh_file)
      filename = enh_file
+  filename= '../data/TI-Opamps.Desc.csv'
+  
+#  exact_search_matches = exact_search_match(enh_file, "current" ,"amplifier")
+#  print len(exact_search_matches)
 
   print "Creating training data model from file ", filename
   total_parts=create_training_data(filename)
   #print ("Corpus words and counts: %s \n" % corpus_words)
-  #print ("Class words: %s" % class_words
-  
+  #print ("Class words: %s" % class_words) 
   # Somthing that matches
-  Sentences=[ "low-quiescent current amplifiers offer high-input impedance" ,"amit", "unity gain-bandwidth"]
+  Sentences=[ "low-quiescent current amplifiers high-input impedance" ,"amit", "unity gain-bandwidth"]
   for sentence in Sentences:
     print "\nSentence = ", sentence
     matches=classify(sentence)
     print "Total Matches=" + str(len(matches)) + " out of " + str(total_parts) + " Matches"
     matched_parts=[]
-    vendor_url='http://www.ti.com/product'
     for m in matches:
       matched_parts.append(m[0]);
-      part_url=vendor_url+"/"+m[0]
-      #print " Score = ", m[1], " ", part_url
   
-  Sentences=[ "current amplifier", "amplify current" , "amplify voltage "];
+  Sentences=[ "current amplifier", "I want to amplify current" , "amplify voltage " , "I want to amplify voltage" ];
   results = dict(); 
   for sentence in Sentences:
     print "\nSentence = ", sentence
     matches=classify(sentence)
     print "Total Matches=" + str(len(matches)) + " out of " + str(total_parts) + " Matches"
-    matched_parts=[]
-    for m in matches:
-      matched_parts.append(m[0]);
-    results[sentence] = matched_parts
+    results[sentence]=matches
+    print matches
+    sys.exit()
 
   print "Does my recommendation change based on search words??" 
   print Sentences[0] , " vs ", Sentences[1] , " --> ", str(len(set(results[Sentences[0]]) - set(results[Sentences[1]])))
   print Sentences[0] , " vs ", Sentences[2] , " --> ", str(len(set(results[Sentences[0]]) - set(results[Sentences[2]])))
-  print Sentences[1] , " vs ", Sentences[2] , " --> ", str(len(set(results[Sentences[0]]) - set(results[Sentences[2]])))
+  print Sentences[1] , " vs ", Sentences[2] , " --> ", str(len(set(results[Sentences[1]]) - set(results[Sentences[2]])))
+  print Sentences[2] , " vs ", Sentences[3] , " --> ", str(len(set(results[Sentences[2]]) - set(results[Sentences[3]])))
 #------------------------------------------------------------_#
 
 

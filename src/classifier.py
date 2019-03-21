@@ -73,8 +73,7 @@ PClassID = []
 P= dict()
 PID=0
 for p in dataset['Part Number']:
-  pc=re.sub(r'\d|-', '', p)[0:3]
-  #print p , "--> ", pc
+  pc=re.sub(r'\d|-', '', p)[0:2]
   if pc in P.keys():
     PClassID.append(P[pc])
   else:
@@ -87,7 +86,7 @@ dataset['PartsClassID']= PClassID
 #print "PClassID=",PClassID
 #print sorted(PClassID)
 print "# of Classes =", str(len(P))
-print "Classes= " , P
+#print "Classes= " , P
 
 #feature_names=["price","Customer"]
 #feature_names=["Channels","GBW","CMRR","size","price","Dimension (mm)","Customer"]
@@ -100,7 +99,7 @@ dataset.fillna(2, inplace=True)
 X = dataset[feature_names]
 y = dataset['PartsClassID']
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=0)
 sc = StandardScaler()
 X_train = sc.fit_transform(X_train)
 X_test = sc.transform(X_test)
