@@ -1,0 +1,10 @@
+csv
+html2text
+matplotlib
+nltk
+numpy
+os
+pandas
+re
+sys
+urllib2
